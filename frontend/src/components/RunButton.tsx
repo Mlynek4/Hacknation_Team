@@ -2,9 +2,10 @@ import { css, cx } from "@emotion/css";
 import colorPalette from "../constants/colorPalette";
 import { typography } from "../constants/typography";
 import { FaLock } from "react-icons/fa6";
-const RunButton = () => {
+const RunButton = ({ onClick }) => {
   return (
     <button
+      onClick={onClick}
       className={cx(
         typography.textM,
         css`
@@ -19,7 +20,7 @@ const RunButton = () => {
           display: flex;
           align-items: center;
           gap: 8px;
-          
+
           &:hover {
             border-color: ${colorPalette.primary};
             background-color: ${colorPalette.primary};

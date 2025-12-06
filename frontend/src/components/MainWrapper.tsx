@@ -10,6 +10,7 @@ const MainWrapper = () => {
         display: flex;
         flex-direction: column;
         gap: 25px;
+        padding: 10px
       `}
     >
       <div

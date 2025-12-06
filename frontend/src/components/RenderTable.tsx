@@ -4,6 +4,9 @@ import { css, cx } from "@emotion/css";
 import colorPalette from "../constants/colorPalette";
 import { useState } from "react";
 import RunButton from "./RunButton";
+import { chatApi } from "@/api/chatApi";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const Header = ({ header, description }) => {
   return (
@@ -45,10 +48,9 @@ const OutputTextArea = ({ value, onChange, readOnly = false }) => {
         "output-border-right",
         css`
           width: 100%;
-          height: 400px;
+          height: 100%;
           border: none;
           resize: none;
-          padding: 15px;
           font-size: 14px;
           background-color: ${colorPalette.background};
           color: ${colorPalette.primary};
@@ -68,6 +70,18 @@ const RenderTable = () => {
   const [inputText, setInputText] = useState("");
   const [anonymizedText, setAnonymizedText] = useState("");
   const [substitutedText, setSubstitutedText] = useState("");
+  const [loadingData, setLoadingData] = useState(false);
+
+  const handleClick = async () => {
+    setLoadingData(true);
+    const res = await chatApi.anonymizeText(inputText);
+    const { textAnonymized, textSynthetic } = res.data ?? {};
+
+    setAnonymizedText(textAnonymized || "");
+    setSubstitutedText(textSynthetic || "");
+
+    setLoadingData(false);
+  };
 
   return (
     <>
@@ -110,20 +124,109 @@ const RenderTable = () => {
             }
           `}
         >
-          <OutputTextArea value={inputText} onChange={setInputText} />
-          <OutputTextArea
-            value={anonymizedText}
-            onChange={setInputText}
-            readOnly
-          />
-          <OutputTextArea
-            value={substitutedText}
-            onChange={setInputText}
-            readOnly
-          />
+          <div
+            className={cx(
+              "output-border-right",
+              css`
+                padding: 15px;
+                width: 100%;
+                height: 400px;
+              `
+            )}
+          >
+            <OutputTextArea value={inputText} onChange={setInputText} />
+          </div>
+
+          <div
+            className={cx(
+              "output-border-right",
+              css`
+                padding: 15px;
+                width: 100%;
+                height: 400px;
+              `
+            )}
+          >
+            {loadingData ? (
+              <SkeletonTheme baseColor="#202020" highlightColor="#444">
+                <div
+                  id="ads"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%", 
+                    justifyContent: "space-between",
+                  }}
+                >
+                  {Array.from({ length: 8 }).map((_, idx) => {
+                    return (
+                      <Skeleton
+                        duration={idx * 0.1 + 1.8} 
+                        key={idx}
+                        height={idx % 2 == 0 ? 20 : 40}
+                        style={{
+                          marginBottom: 16,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </SkeletonTheme>
+            ) : (
+              <OutputTextArea
+                value={anonymizedText}
+                onChange={setInputText}
+                readOnly
+              />
+            )}
+          </div>
+
+          <div
+            className={cx(
+              "output-border-right",
+              css`
+                padding: 15px;
+                width: 100%;
+                height: 400px;
+              `
+            )}
+          >
+            {loadingData ? (
+              <SkeletonTheme baseColor="#202020" highlightColor="#444">
+                <div
+                  id="ads"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%", 
+                    justifyContent: "space-between",
+                  }}
+                >
+                  {Array.from({ length: 8 }).map((_, idx) => {
+                    return (
+                      <Skeleton
+                        duration={idx * 0.1 + 1.8} 
+                        key={idx}
+                        height={idx % 2 == 0 ? 20 : 40} 
+                        style={{
+                          marginBottom: 16,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </SkeletonTheme>
+            ) : (
+              <OutputTextArea
+                value={substitutedText}
+                onChange={setInputText}
+                readOnly
+              />
+            )}
+          </div>
         </div>
       </div>
-      <RunButton />
+      <RunButton onClick={handleClick} />
     </>
   );
 };

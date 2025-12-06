@@ -22,7 +22,7 @@ source venv/bin/activate # Linux / macOS
 
 pip install -r requirements.txt
 
-uvicorn main:app --reload
+uvicorn main:app --reload --host localhost --port 8080
 
 ## 1️⃣ Frontend – React
 cd ./frontend
