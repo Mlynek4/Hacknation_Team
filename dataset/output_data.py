@@ -1,124 +1,3 @@
-# import pandas as pd
-# import random
-# import re
-
-# VALUES_FILE = "anonymizer_values_55k.csv"
-# TEMPLATES_FILE = "templates_5000.csv"
-# OUTPUT_FILE = "filled_templates.csv"
-
-# # 1) Load values
-# df_vals = pd.read_csv(VALUES_FILE)
-# values_by_cat = df_vals.groupby("category")["value"].apply(list).to_dict()
-
-# # 2) Load templates
-# df_templates = pd.read_csv(TEMPLATES_FILE)
-# templates = df_templates["template"].tolist()
-
-# def extract_placeholders(template):
-#     return re.findall(r"\[([^\]]+)\]", template)
-
-# def fill(template):
-#     placeholders = extract_placeholders(template)
-#     text = template
-
-#     for ph in placeholders:
-#         if ph in values_by_cat:
-#             value = random.choice(values_by_cat[ph])
-#         else:
-#             value = f"<MISSING-{ph}>"
-
-#         text = text.replace(f"[{ph}]", value)
-
-#     return text
-
-# # 3) Fill all templates
-# filled = [fill(t) for t in templates]
-
-# # 4) Save
-# pd.DataFrame({"text": filled}).to_csv(OUTPUT_FILE, index=False)
-
-# print("Done.")
-
-
-# # import pandas as pd
-# # import random
-# # import re
-# # import spacy
-
-# # VALUES_FILE = "anonymizer_values_55k.csv"
-# # TEMPLATES_FILE = "templates_5000.csv"
-# # OUTPUT_FILE = "filled_templates.csv"
-
-# # # ---- Load data ----
-# # df_vals = pd.read_csv(VALUES_FILE)
-# # values_by_cat = df_vals.groupby("category")["value"].apply(list).to_dict()
-# # df_templates = pd.read_csv(TEMPLATES_FILE)
-# # templates = df_templates["template"].tolist()
-
-# # nlp = spacy.load("pl_core_news_sm")
-
-# # # ---- Placeholder regex ----
-# # PLACEHOLDER_RE = re.compile(r"\[([^\]]+)\]")
-
-# # # ---- Simple rules for Polish inflection (example: dopełniacz) ----
-# # def odmiana(value, category, case="gen"):
-# #     if category == "surname" and case=="gen":
-# #         # bardzo uproszczona odmiana do dopełniacza
-# #         if value.endswith("ski"):
-# #             return value[:-2] + "skiego"
-# #         elif value.endswith("ska"):
-# #             return value[:-1] + "iej"
-# #         elif value.endswith("ak"):
-# #             return value + "a"
-# #         else:
-# #             return value + "a"
-# #     if category == "city" and case=="loc":
-# #         # miejscownik
-# #         if value.endswith("a"):
-# #             return value[:-1] + "ie"
-# #         else:
-# #             return value + "ie"
-# #     # dla innych przypadków, brak zmian
-# #     return value
-
-# # # ---- Extract placeholders ----
-# # def extract_placeholders(template):
-# #     return PLACEHOLDER_RE.findall(template)
-
-# # # ---- Fill template with context-aware inflection ----
-# # def fill(template):
-# #     text = template
-# #     placeholders = extract_placeholders(template)
-
-# #     for ph in placeholders:
-# #         if ph in values_by_cat:
-# #             value = random.choice(values_by_cat[ph])
-# #         else:
-# #             value = f"<MISSING-{ph}>"
-
-# #         # prosty kontekst: sprawdz słowo poprzedzające placeholder
-# #         # np. "z [surname]" -> dopełniacz
-# #         pattern = r"(\b\w+\b)\s+\[" + re.escape(ph) + r"\]"
-# #         match = re.search(pattern, text)
-# #         if match:
-# #             prev_word = match.group(1).lower()
-# #             if prev_word in ["z", "do", "od"]:  # typowe prepozycje do dopełniacza
-# #                 value = odmiana(value, ph, "gen")
-# #             elif prev_word in ["w", "na", "przy"]:  # miejscownik
-# #                 value = odmiana(value, ph, "loc")
-# #             # można dodać inne reguły
-
-# #         text = text.replace(f"[{ph}]", value)
-
-# #     return text
-
-# # # ---- Fill all templates ----
-# # filled = [fill(t) for t in templates]
-
-# # # ---- Save ----
-# # pd.DataFrame({"text": filled}).to_csv(OUTPUT_FILE, index=False)
-# # print("Done.")
-
 import pandas as pd
 import random
 import re
@@ -128,6 +7,13 @@ from typing import List, Tuple, Dict
 VALUES_FILE = "anonymizer_values_55k.csv"
 TEMPLATES_FILE = "szablony_zdan.csv"
 OUTPUT_CONLL_FILE = "output_data.txt"
+
+# 🚀 NOWA ZMIENNA KONTROLNA 
+# Ustawia, ile razy każdy szablon (zdanie) ma zostać użyty do generowania unikatowych rekordów.
+# Przykłady:
+# 1. Jeśli masz 26 szablonów i ustawisz 30, otrzymasz 780 rekordów (26 * 30).
+# 2. Jeśli masz 50 szablonów i ustawisz 10, otrzymasz 500 rekordów.
+RECORDS_PER_TEMPLATE = 50 # TUTAJ KONTROLUJESZ LICZBĘ GENEROWANYCH ZDAŃ
 
 # Regex do ekstrakcji placeholderów (np. [name])
 PLACEHOLDER_RE = re.compile(r"\[([^\]]+)\]")
@@ -190,7 +76,6 @@ def tokenize_and_tag(
 def generate_conll(templates: List[str], values_by_cat: Dict[str, List[str]]) -> List[str]:
     """
     Generuje dane CoNLL przez przetwarzanie szablonów i wstawianie wartości.
-    To jest kluczowa funkcja, która rozwiązuje problem tokenizacji.
     """
     all_conll_lines = []
     
@@ -199,7 +84,6 @@ def generate_conll(templates: List[str], values_by_cat: Dict[str, List[str]]) ->
         placeholders = PLACEHOLDER_RE.findall(template)
         
         # Wypełniamy wartościami i jednocześnie śledzimy granice
-        # Używamy re.split, aby podzielić szablon na części: tekst_O * placeholder * tekst_O * ...
         parts = PLACEHOLDER_RE.split(template)
         
         current_conll_entry = []
@@ -213,7 +97,8 @@ def generate_conll(templates: List[str], values_by_cat: Dict[str, List[str]]) ->
                 # To jest nazwa placeholdera (np. 'phone', 'name')
                 category = part
                 
-                # Wylosuj wartość i zaktualizuj szablon (choć tutaj nie aktualizujemy samego stringa, tylko generujemy tokeny)
+                # Wylosuj wartość
+                # Używamy .get() i listy awaryjnej, aby obsłużyć brakujące kategorie (MISSING-...)
                 value = random.choice(values_by_cat.get(category, [f"<MISSING-{category}>"]))
                 
                 # Dodaj tokeny wstawionej encji
@@ -234,20 +119,29 @@ if __name__ == "__main__":
     values_by_cat, templates = load_data()
     
     if values_by_cat and templates:
+        # Obliczenie docelowej liczby
+        target_records = len(templates) * RECORDS_PER_TEMPLATE
+        
         print(f"Załadowano {len(templates)} szablonów i {len(values_by_cat)} kategorii wartości.")
+        print(f"Ustawiono, że każdy szablon zostanie użyty {RECORDS_PER_TEMPLATE} razy. Docelowy zbiór: {target_records} rekordów.")
         
-        # 1. Generowanie danych CoNLL
-        conll_output_lines = generate_conll(templates, values_by_cat)
+        all_conll_output_lines = []
         
+        # KLUCZOWA ZMIANA: Pętla wielokrotnego generowania
+        for i in range(RECORDS_PER_TEMPLATE):
+            print(f"Generacja: {i + 1}/{RECORDS_PER_TEMPLATE}...")
+            # 1. Generowanie danych CoNLL (za każdym razem losowane są nowe wartości)
+            conll_output_lines = generate_conll(templates, values_by_cat)
+            all_conll_output_lines.extend(conll_output_lines)
+
         # 2. Zapis do pliku
         try:
+            # Zapisujemy wszystkie wygenerowane linie
             with open(OUTPUT_CONLL_FILE, "w", encoding="utf-8") as f:
-                f.write("\n".join(conll_output_lines))
-            print(f"Pomyślnie zapisano {len(conll_output_lines) - len(templates)} tokenów do {OUTPUT_CONLL_FILE}")
-            
-            # Opcjonalnie: Zapisz surowe teksty (jak w pierwotnym skrypcie)
-            # filled_texts = [fill(t) for t in templates] # Można zaimplementować inną funkcję fill
-            # pd.DataFrame({"text": filled_texts}).to_csv("filled_templates_raw.csv", index=False)
+                f.write("\n".join(all_conll_output_lines))
+                
+            generated_sentences = len(templates) * RECORDS_PER_TEMPLATE
+            print(f"\n✅ Pomyślnie zapisano {generated_sentences} zdań (szablonów) do {OUTPUT_CONLL_FILE}")
             
         except Exception as e:
             print(f"Błąd podczas zapisu pliku: {e}")
