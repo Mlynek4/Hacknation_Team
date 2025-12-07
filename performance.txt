@@ -1,0 +1,16 @@
+**Time:**
+Przetwarzanie 1000 zdań zajmuje **12.4 sekundy** (od momentu wczytania danych do zapisania wyniku).
+*Czas ładowania modelu i bibliotek nie jest wliczany.*
+
+**Hardware:**
+
+* **Typ:** GPU
+* **Model:** NVIDIA RTX 3060 (12 GB VRAM)
+* **CPU pomocniczy:** Intel i5-12400
+* **RAM:** 32 GB
+
+**API:**
+
+* Czy użyto API PLLUM? **NIE**
+* Czy użyto modelu działającego na zewnętrznym serwerze? **NIE**
+* Wykorzystany model: **https://huggingface.co/allegro/herbert-large-cased** uruchamiany lokalnie w środowisku Python + PyTorch.
