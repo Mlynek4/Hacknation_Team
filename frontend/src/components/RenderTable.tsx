@@ -2,7 +2,7 @@ import { MdOutlineAutoAwesome } from "react-icons/md";
 import { typography } from "../constants/typography";
 import { css, cx } from "@emotion/css";
 import colorPalette from "../constants/colorPalette";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import RunButton from "./RunButton";
 import { chatApi } from "@/api/chatApi";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
@@ -66,6 +66,80 @@ const OutputTextArea = ({ value, onChange, readOnly = false }) => {
   );
 };
 
+const PLACEHOLDER_REGEX = /\[.*?\]/g;
+const VIBRANT_BORDER_COLORS = [
+  "#FF4444",
+  "#33B5E5",
+  "#99CC00",
+  "#FFBB33",
+  "#CC00CC",
+  "#00DDFF",
+];
+
+const PII_COLOR_MAP = {
+  // 1. DANE IDENTYFIKACYJNE OSOBOWE (25% Zwiększona Saturaacja i Jasność)
+
+  // -- Podstawowa identyfikacja (Błękity, Cyjany, Jasne Zielenie)
+  name: "#00FFFF", // Czysty Cyjan
+  surname: "#00BFFF", // Głęboki Błękit
+  age: "#7FFF00", // Jasna Zieleń Chartreuse
+  "date-of-birth": "#32CD32", // Limonkowa Zieleń
+  date: "#ADFF2F", // Żółto-Zielony
+  relative: "#00FA9A", // Wiosenna Zieleń
+
+  // -- Dane Wrażliwe (Czerwienie, Magnety, Fiolety - Wyróżnienie)
+  sex: "#FF4500", // Pomarańczowo-Czerwony
+  religion: "#FF1493", // Intensywny Róż (Deep Pink)
+  "political-view": "#FF00FF", // Magenta
+  ethnicity: "#9932CC", // Fiolet Orchid
+  "sexual-orientation": "#8A2BE2", // Fiolet Niebieski
+  health: "#DC143C", // Karmazynowy (Mocna Czerwień)
+
+  // 2. DANE KONTAKTOWE I LOKALIZACYJNE (Żółcie, Złota)
+  city: "#FFFF00", // Czysty Żółty
+  address: "#FFD700", // Złoty
+  email: "#FFA500", // Pomarańczowy
+  phone: "#FF8C00", // Ciemny Pomarańcz
+
+  // 3. IDENTYFIKATORY DOKUMENTÓW (Krytyczne - Czerwone i Pomarańczowe Odcienie)
+  pesel: "#FF0000", // Czysta Czerwień (Max Alarm)
+  "document-number": "#FF69B4", // Gorący Róż (Hot Pink)
+
+  // 4. DANE ZAWODOWE I EDUKACYJNE (Zieleń, Turkus)
+  company: "#00FF7F", // Wiosenny Turkus
+  "school-name": "#40E0D0", // Turkus
+  "job-title": "#00CED1", // Ciemny Turkus
+
+  // 5. INFORMACJE FINANSOWE (Fiolety i Indygo)
+  "bank-account": "#800080", // Fiolet
+  "credit-card-number": "#4B0082", // Indygo
+
+  // 6. IDENTYFIKATORY CYFROWE I LOGINY (Brązy, Ciemne Złota)
+  username: "#DAA520", // Złoty Pręt (Goldenrod)
+  secret: "#B8860B", // Ciemne Złoto (DarkGoldenrod)
+};
+
+const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const tokenizeAndStyleText = (text) => {
+  // Użycie metody .replace z funkcją callback do utworzenia elementu <span>
+  const styledText = text.replace(PLACEHOLDER_REGEX, (matchedToken) => {
+    console.log("matchedToken", matchedToken);
+    // Używamy `className` 'token' do zastosowania stylów CSS
+    const key = matchedToken.slice(1, -1).toLowerCase(); // Usuń nawiasy kwadratowe i zamień na małe litery
+    console.log("key", key);
+
+    const randomBgColor = PII_COLOR_MAP[key] ?? "#888888";
+    // const randomBgColor = VIBRANT_BORDER_COLORS[i % VIBRANT_BORDER_COLORS.length];
+    // const randomBgColor = getRandomItem(VIBRANT_BORDER_COLORS);
+    return `<span class=${cx(css`
+      background-color: ${randomBgColor}44;
+      border: 1px solid ${randomBgColor}ee;
+x    `)}>${matchedToken}</span>`;
+  });
+
+  return styledText;
+};
 const RenderTable = () => {
   const [inputText, setInputText] = useState("");
   const [anonymizedText, setAnonymizedText] = useState("");
@@ -77,8 +151,11 @@ const RenderTable = () => {
     const res = await chatApi.anonymizeText(inputText);
     const { textAnonymized, textSynthetic } = res.data ?? {};
 
-    setAnonymizedText(textAnonymized || "");
+    // setAnonymizedText(textAnonymized || "");
     setSubstitutedText(textSynthetic || "");
+
+    const rezult = tokenizeAndStyleText(textAnonymized);
+    setAnonymizedText(rezult);
 
     setLoadingData(false);
   };
@@ -154,14 +231,14 @@ const RenderTable = () => {
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    height: "100%", 
+                    height: "100%",
                     justifyContent: "space-between",
                   }}
                 >
                   {Array.from({ length: 8 }).map((_, idx) => {
                     return (
                       <Skeleton
-                        duration={idx * 0.1 + 1.8} 
+                        duration={idx * 0.1 + 1.8}
                         key={idx}
                         height={idx % 2 == 0 ? 20 : 40}
                         style={{
@@ -173,11 +250,21 @@ const RenderTable = () => {
                 </div>
               </SkeletonTheme>
             ) : (
-              <OutputTextArea
-                value={anonymizedText}
-                onChange={setInputText}
-                readOnly
-              />
+              <div
+                style={{
+                  padding: "10px",
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: anonymizedText,
+                }}
+              >
+                {/* {anonymizedText} */}
+              </div>
+              // <OutputTextArea
+              //   value={anonymizedText}
+              //   onChange={setInputText}
+              //   readOnly
+              // />
             )}
           </div>
 
@@ -198,16 +285,16 @@ const RenderTable = () => {
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    height: "100%", 
+                    height: "100%",
                     justifyContent: "space-between",
                   }}
                 >
                   {Array.from({ length: 8 }).map((_, idx) => {
                     return (
                       <Skeleton
-                        duration={idx * 0.1 + 1.8} 
+                        duration={idx * 0.1 + 1.8}
                         key={idx}
-                        height={idx % 2 == 0 ? 20 : 40} 
+                        height={idx % 2 == 0 ? 20 : 40}
                         style={{
                           marginBottom: 16,
                         }}

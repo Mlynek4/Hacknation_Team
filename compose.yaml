@@ -1,0 +1,44 @@
+services:
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      WATCHPACK_POLLING: true
+      CHOKIDAR_USEPOLLING: true
+    init: true
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    restart: unless-stopped
+    ports:
+      - 5173:5173
+    networks:
+      - app_network
+    
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    ports:
+      - 8080:8080
+    volumes:
+      - ./backend:/app
+      # - ./backend:/backend
+    environment:
+      - WATCHFILES_FORCE_POLLING=1  # This forces file watching (solves issues with hot reloading on windows)
+      - WATCHFILES_POLLING_INTERVAL=1  # Check every 1 second
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/backend
+    networks:
+      - app_network
+    restart: unless-stopped
+
+# Define a network, which allows containers to communicate
+# with each other, by using their container name as a hostname
+networks:
+  app_network:
+    driver: bridge

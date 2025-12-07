@@ -83,7 +83,7 @@ print("Loading HerBERT token classifier (FastPDN)...")
 DEVICE = 0 if torch.cuda.is_available() else -1
 NER_PIPELINE = pipeline(
     "ner",
-    model="clarin-pl/FastPDN",        # publiczny PL NER
+    model="clarin-pl/FastPDN",  # publiczny PL NER
     aggregation_strategy="simple",
     device=DEVICE,
 )
@@ -98,13 +98,21 @@ PIIEntity = Dict[str, Any]
 # ============================================================
 
 # --- Pomocnicze mapowanie liter → cyfr dla telefonów ---
-PHONE_CHAR_MAP = str.maketrans({
-    "O": "0", "o": "0",
-    "I": "1", "l": "1", "L": "1",
-    "Z": "2", "z": "2",
-    "S": "5", "s": "5",
-    "B": "8", "b": "8",
-})
+PHONE_CHAR_MAP = str.maketrans(
+    {
+        "O": "0",
+        "o": "0",
+        "I": "1",
+        "l": "1",
+        "L": "1",
+        "Z": "2",
+        "z": "2",
+        "S": "5",
+        "s": "5",
+        "B": "8",
+        "b": "8",
+    }
+)
 
 
 def normalize_phone_digits(raw: str) -> str:
@@ -120,9 +128,7 @@ PESEL_RAW_RE = re.compile(r"\b\d{11}\b")
 PESEL_TAGGED_RE = re.compile(r"(?i)\bpesel\b[^0-9]{0,5}([0-9A-Za-z!]{8,14})")
 
 # kandydaci na telefony – szeroki, "brudny" wzorzec, potem docinamy heurystyką
-PHONE_RE = re.compile(
-    r"\b(?:\+48[-\s]?)?(?:[0-9A-Za-z]{2,3}[-\s]?){2,4}\b"
-)
+PHONE_RE = re.compile(r"\b(?:\+48[-\s]?)?(?:[0-9A-Za-z]{2,3}[-\s]?){2,4}\b")
 
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 IBAN_PL_RE = re.compile(r"\bPL\d{26}\b")
@@ -139,7 +145,9 @@ DATE_NUM_RE = re.compile(r"\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b")
 DATE_WORD_RE = re.compile(r"\b\d{1,2}\s+[a-ząćęłńóśźż]+\s+\d{4}\b", re.IGNORECASE)
 ZIP_RE = re.compile(r"\b\d{2}-\d{3}\b")
 
-SEX_RE = re.compile(r"\b(kobieta|mężczyzna|meżczyzna|mężcżyzną|mężczyna)\b", re.IGNORECASE)
+SEX_RE = re.compile(
+    r"\b(kobieta|mężczyzna|meżczyzna|mężcżyzną|mężczyna)\b", re.IGNORECASE
+)
 RELATIVE_RE = re.compile(
     r"\b(ojciec|tata|matka|mama|brat|siostra|syn|córka|rodzice|dziadek|babcia)\b",
     re.IGNORECASE,
@@ -221,9 +229,18 @@ def is_pipe_diameter(text: str, m: re.Match) -> bool:
 
     ctx = _get_context(text, m.start(), m.end(), radius=30).lower()
     keywords = [
-        "rura", "rurę", "rurą", "rurociąg",
-        "kanaliz", "pvc", "pcv", " pe", "ø", "sdr",
-        "instalacj", "przyłącz"
+        "rura",
+        "rurę",
+        "rurą",
+        "rurociąg",
+        "kanaliz",
+        "pvc",
+        "pcv",
+        " pe",
+        "ø",
+        "sdr",
+        "instalacj",
+        "przyłącz",
     ]
     return any(k in ctx for k in keywords)
 
@@ -235,16 +252,18 @@ def is_health_true_positive(text: str, m: re.Match) -> bool:
     """
     ctx = _get_context(text, m.start(), m.end(), radius=40).lower()
     triggers = [
-        "zdiagnoz",        # mam zdiagnozowaną depresję
-        "psycholog",       # u psychologa
-        "psychiatr",       # u psychiatry
-        "terapi",          # terapia
-        "leczen",          # leczenie
-        "choruję na",      # choruję na ...
+        "zdiagnoz",  # mam zdiagnozowaną depresję
+        "psycholog",  # u psychologa
+        "psychiatr",  # u psychiatry
+        "terapi",  # terapia
+        "leczen",  # leczenie
+        "choruję na",  # choruję na ...
         "choruje na",
-        "nadcisn",         # nadciśnienie
-        "uzależn", "uzalezn",
-        "samobój", "samoboj",
+        "nadcisn",  # nadciśnienie
+        "uzależn",
+        "uzalezn",
+        "samobój",
+        "samoboj",
         "objaw",
     ]
     return any(t in ctx for t in triggers)
@@ -288,7 +307,10 @@ def regex_pii(text: str) -> List[PIIEntity]:
         # krótkie (7–8 cyfr) tylko w mocnym kontekście telefonicznym
         if len(digits) in (7, 8):
             ctx = _get_context(text, m.start(), m.end(), radius=10).lower()
-            if not any(t in ctx for t in ["tel", "telefon", "kom.", "nr tel", "nr. tel", "nr telefonu"]):
+            if not any(
+                t in ctx
+                for t in ["tel", "telefon", "kom.", "nr tel", "nr. tel", "nr telefonu"]
+            ):
                 continue
 
         add("PHONE", m, 0.99)
@@ -375,6 +397,7 @@ def regex_pii(text: str) -> List[PIIEntity]:
 # 3. FastPDN (HerBERT) NER → kandydaci PII + HEURYSTYKI
 # ============================================================
 
+
 def fastpdn_ner_sentence(sent_text: str, sent_start: int) -> List[Dict[str, Any]]:
     """
     NER FastPDN na pojedynczym zdaniu (offsetowanym sent_start).
@@ -438,7 +461,9 @@ def is_reasonable_span(span: str, ent_type: str) -> bool:
     return True
 
 
-def filter_person_candidates(doc: spacy.tokens.Doc, candidates: List[PIIEntity]) -> List[PIIEntity]:
+def filter_person_candidates(
+    doc: spacy.tokens.Doc, candidates: List[PIIEntity]
+) -> List[PIIEntity]:
     """
     Filtrujemy pseudo-osoby (np. 'Inwestor') będące zwykłymi rzeczownikami.
     """
@@ -472,15 +497,31 @@ def classify_location(span: str, context: str) -> str:
 
     has_number = any(ch.isdigit() for ch in span)
     street_words = [
-        "ul.", "ul ", "ulica", "aleja", "al.", "plac", "pl.",
-        "alei", "aleję", "placu", "pi.", "pl."
+        "ul.",
+        "ul ",
+        "ulica",
+        "aleja",
+        "al.",
+        "plac",
+        "pl.",
+        "alei",
+        "aleję",
+        "placu",
+        "pi.",
+        "pl.",
     ]
     has_street = any(w in lower_span for w in street_words)
     has_zip = bool(ZIP_RE.search(span))
 
     address_triggers = [
-        "mieszkam", "adres", "zamieszka", "przy ulicy",
-        "pod adresem", "adres to", "plac", "placu"
+        "mieszkam",
+        "adres",
+        "zamieszka",
+        "przy ulicy",
+        "pod adresem",
+        "adres to",
+        "plac",
+        "placu",
     ]
     has_address_ctx = any(w in lower_ctx for w in address_triggers)
 
@@ -495,8 +536,15 @@ def classify_org(span: str, context: str) -> str:
     """
     lower = span.lower()
     school_words = [
-        "szkoła", "szkoły", "liceum", "technikum", "uniwersytet",
-        "politechnika", "uczelnia", "gimnazjum", "przedszkole",
+        "szkoła",
+        "szkoły",
+        "liceum",
+        "technikum",
+        "uniwersytet",
+        "politechnika",
+        "uczelnia",
+        "gimnazjum",
+        "przedszkole",
     ]
     if any(w in lower for w in school_words):
         return "SCHOOL_NAME"
@@ -508,7 +556,7 @@ def split_person_into_name_surname(text: str, ent: PIIEntity) -> List[PIIEntity]
     Z encji PERSON tworzy osobne encje NAME i SURNAME, jeśli to możliwe.
     Zakładamy prosty przypadek 'Imię Nazwisko' (ew. kilka członów).
     """
-    span_text = text[ent["start"]:ent["end"]]
+    span_text = text[ent["start"] : ent["end"]]
     parts = span_text.strip().split()
     if len(parts) < 2:
         return [ent]
@@ -521,13 +569,15 @@ def split_person_into_name_surname(text: str, ent: PIIEntity) -> List[PIIEntity]
     if name_start == -1:
         return [ent]
     name_end = name_start + len(name_word)
-    sub_ents.append({
-        "type": "NAME",
-        "start": name_start,
-        "end": name_end,
-        "span": name_word,
-        "score": ent.get("score", 0.9),
-    })
+    sub_ents.append(
+        {
+            "type": "NAME",
+            "start": name_start,
+            "end": name_end,
+            "span": name_word,
+            "score": ent.get("score", 0.9),
+        }
+    )
 
     # SURNAME – ostatnie słowo
     surname_word = parts[-1]
@@ -536,13 +586,15 @@ def split_person_into_name_surname(text: str, ent: PIIEntity) -> List[PIIEntity]
         return [ent]
     surname_end = surname_start + len(surname_word)
 
-    sub_ents.append({
-        "type": "SURNAME",
-        "start": surname_start,
-        "end": surname_end,
-        "span": surname_word,
-        "score": ent.get("score", 0.9),
-    })
+    sub_ents.append(
+        {
+            "type": "SURNAME",
+            "start": surname_start,
+            "end": surname_end,
+            "span": surname_word,
+            "score": ent.get("score", 0.9),
+        }
+    )
 
     return sub_ents
 
@@ -746,10 +798,10 @@ def anonymize_text(text: str, entities: List[PIIEntity]) -> str:
     cursor = 0
 
     for e in entities_sorted:
-        out_parts.append(text[cursor:e["start"]])
+        out_parts.append(text[cursor : e["start"]])
         token = ENTITY_TO_TOKEN.get(e["type"])
         if token is None:
-            token = text[e["start"]:e["end"]]
+            token = text[e["start"] : e["end"]]
         out_parts.append(token)
         cursor = e["end"]
 
@@ -763,8 +815,25 @@ def anonymize_text(text: str, entities: List[PIIEntity]) -> str:
 # 6. Generator syntetycznych danych
 # ============================================================
 
-FIRST_NAMES = ["Jan", "Maria", "Piotr", "Katarzyna", "Michał", "Agnieszka", "Natasza", "Karol"]
-LAST_NAMES = ["Kowalski", "Nowak", "Wiśniewski", "Wójcik", "Kamińska", "Lewandowski", "Zieliński"]
+FIRST_NAMES = [
+    "Jan",
+    "Maria",
+    "Piotr",
+    "Katarzyna",
+    "Michał",
+    "Agnieszka",
+    "Natasza",
+    "Karol",
+]
+LAST_NAMES = [
+    "Kowalski",
+    "Nowak",
+    "Wiśniewski",
+    "Wójcik",
+    "Kamińska",
+    "Lewandowski",
+    "Zieliński",
+]
 CITIES = ["Warszawa", "Kraków", "Gdańsk", "Poznań", "Wrocław", "Bielsko-Biała"]
 STREETS = ["Długa", "Szeroka", "Krótka", "Lipowa", "Polna", "Słoneczna"]
 COMPANIES = ["Firma X", "ACME Sp. z o.o.", "TechPol", "InnoSoft"]
@@ -950,6 +1019,7 @@ def synthesize_text(anonymized: str) -> str:
 # 7. Główna funkcja pipeline'u
 # ============================================================
 
+
 def run_pipeline(text: str) -> Dict[str, Any]:
     """
     Wejście: surowy tekst z PII.
@@ -970,19 +1040,21 @@ def run_pipeline(text: str) -> Dict[str, Any]:
         "synthetic": synthetic,
     }
 
+
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",  # Twój frontend dev
-]
+origins = ["*"] 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # które domeny mają dostęp
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # GET, POST, OPTIONS itp.
-    allow_headers=["*"],  # nagłówki HTTP
+    allow_methods=["*"],    # Zezwolenie na wszystkie metody (GET, POST, PUT, OPTIONS...)
+    allow_headers=["*"],    # Zezwolenie na wszystkie nagłówki HTTP
 )
+
+print("origins")
+
 
 
 # definiujesz model danych
@@ -996,7 +1068,7 @@ def read_root():
 
 
 @app.post("/anonymize")
-def anonymize_text(req: TextRequest):
+def anonymize_text_endpoint(req: TextRequest):
     text = req.text
     result = run_pipeline(text)
     print("Entities:", result["entities"])
@@ -1004,5 +1076,5 @@ def anonymize_text(req: TextRequest):
     print("Synthetic:", result["synthetic"])
     return {
         "textAnonymized": result["anonymized"],
-        "textSynthetic": result["synthetic"]
+        "textSynthetic": result["synthetic"],
     }
