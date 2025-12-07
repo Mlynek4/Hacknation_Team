@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+env/
+ENV/
+.venv/
+
+# PIP
+*.egg-info/
+*.egg
+
+# IDE / edytory
+.vscode/
+.idea/
+*.swp
+
+# Logi
+*.log
+
+# MacOS
+.DS_Store
