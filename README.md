@@ -6,6 +6,7 @@ Niestety nie starczylo nam czasu na podpiecie modelu HerBERT-Large do frontendu.
 
 https://github.com/user-attachments/assets/d9f76757-bcbd-4352-bbdf-3cac4fdd7647
 
+<img width="1580" height="980" alt="compare" src="https://github.com/user-attachments/assets/a3d97f03-58c6-41bf-80d7-6406f1a13028" />
 ---
 
 ## 2. Struktura repozytorium
