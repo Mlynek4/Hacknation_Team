@@ -25,11 +25,11 @@ Niestety nie starczylo nam czasu na podpiecie modelu HerBERT-Large do frontendu.
 │   └── szablony_zdan/          # Predefiniowane zdania z placeholderami
 │   └── output_data/          # Wygenerowany Korpus Syntetyczny (NER)
 │
-├── output_[nazwa_zespolu].txt                # Wynik anonimizacji (wymagane)
-├── performance_[nazwa_zespolu].txt           # Metryki i środowisko (wymagane)
-├── preprocessing_[nazwa_zespolu].md          # Opis przetwarzania danych (opcjonalnie)
-├── synthetic_generation_[nazwa_zespolu].md   # Generator danych syntetycznych (opcjonalnie)
-├── presentation_[nazwa_zespolu].pdf          # Prezentacja (wymagane)
+├── output_hallucination_nation.txt                # Wynik anonimizacji (wymagane)
+├── performance_hallucination_nation.txt           # Metryki i środowisko (wymagane)
+├── preprocessing_hallucination_nation.md          # Opis przetwarzania danych (opcjonalnie)
+├── synthetic_generation_hallucination_nation.md   # Generator danych syntetycznych (opcjonalnie)
+├── presentation_hallucination_nation.pdf          # Prezentacja (wymagane)
 └── Readme.md
 ```
 
